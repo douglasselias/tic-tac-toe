@@ -1,5 +1,32 @@
 #include "raylib.h"
 
+void has_winner(int grid[3][3], int *who_won) {
+  for (int i = 0; i < 3; i++) {
+    for (int player = 1; player < 3; player++) {
+      bool column =
+          grid[i][0] == player && grid[i][1] == player && grid[i][2] == player;
+      bool row =
+          grid[0][i] == player && grid[1][i] == player && grid[2][i] == player;
+      bool left_to_right_diagonal = grid[i][i] == player &&
+                                    grid[i + 1][i + 1] == player &&
+                                    grid[i + 2][i + 2] == player;
+      bool right_to_left_diagonal = grid[i + 2][i] == player &&
+                                    grid[i + 1][i + 1] == player &&
+                                    grid[i][i + 2] == player;
+      if (column || row || left_to_right_diagonal || right_to_left_diagonal)
+        *who_won = player;
+    }
+  }
+}
+
+void reset_grid(int grid[3][3]) {
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      grid[i][j] = 0;
+    }
+  }
+}
+
 int main() {
   const int screen_width = 720;
   const int screen_height = 720;
@@ -7,11 +34,7 @@ int main() {
   SetTargetFPS(60);
 
   int grid[3][3] = {};
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      grid[i][j] = 0;
-    }
-  }
+  reset_grid(grid);
 
   const int cell_size = 720 / 3;
   const int half_cell_size = cell_size / 2;
@@ -25,11 +48,7 @@ int main() {
     if (IsKeyPressed(KEY_ENTER) && who_won != 0) {
       who_won = 0;
       is_player_one = true;
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          grid[i][j] = 0;
-        }
-      }
+      reset_grid(grid);
     }
 
     if (IsMouseButtonPressed(0)) {
@@ -39,23 +58,17 @@ int main() {
       if (grid[x][y] == 0 && who_won == 0) {
         grid[x][y] = is_player_one ? 1 : 2;
         is_player_one = !is_player_one;
-        for (int i = 0; i < 3; i++) {
-          for (int player = 1; player < 3; player++) {
-            bool column = grid[i][0] == player && grid[i][1] == player &&
-                          grid[i][2] == player;
-            bool row = grid[0][i] == player && grid[1][i] == player &&
-                       grid[2][i] == player;
-            bool left_to_right_diagonal = grid[i][i] == player &&
-                                          grid[i + 1][i + 1] == player &&
-                                          grid[i + 2][i + 2] == player;
-            bool right_to_left_diagonal = grid[i + 2][i] == player &&
-                                          grid[i + 1][i + 1] == player &&
-                                          grid[i][i + 2] == player;
-            if (column || row || left_to_right_diagonal ||
-                right_to_left_diagonal)
-              who_won = player;
-          }
+
+        int px = GetRandomValue(0, 2);
+        int py = GetRandomValue(0, 2);
+        while (grid[px][py] != 0) {
+          px = GetRandomValue(0, 2);
+          py = GetRandomValue(0, 2);
         }
+        grid[px][py] = 2;
+        is_player_one = !is_player_one;
+
+        has_winner(grid, &who_won);
       }
     }
 
