@@ -8,5 +8,9 @@ Build with this command:
 
 `gcc -o main main.c -lraylib && ./main`
 
-https://github.com/douglasselias/tic-tac-toe/assets/11854050/bf1bc7ae-c47c-4da3-bd28-881f9e5f0aed
+
+
+
+
+https://github.com/douglasselias/tic-tac-toe/assets/11854050/3d68be05-bf63-424e-817d-ba1ef503a15d
 
