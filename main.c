@@ -1,47 +1,70 @@
 #include <math.h>
+#include <stdio.h>
 
 #include "raylib.h"
 
-void has_winner(int grid[3][3], int *who_won) {
+bool is_winner(int grid[3][3], int player) {
   for (int i = 0; i < 3; i++) {
-    for (int player = 1; player < 3; player++) {
-      bool column =
-          grid[i][0] == player && grid[i][1] == player && grid[i][2] == player;
-      bool row =
-          grid[0][i] == player && grid[1][i] == player && grid[2][i] == player;
-      bool left_to_right_diagonal = grid[i][i] == player &&
-                                    grid[i + 1][i + 1] == player &&
-                                    grid[i + 2][i + 2] == player;
-      bool right_to_left_diagonal = grid[i + 2][i] == player &&
-                                    grid[i + 1][i + 1] == player &&
-                                    grid[i][i + 2] == player;
-      if (column || row || left_to_right_diagonal || right_to_left_diagonal)
-        *who_won = player;
-    }
+    bool column =
+        grid[i][0] == player && grid[i][1] == player && grid[i][2] == player;
+    bool row =
+        grid[0][i] == player && grid[1][i] == player && grid[2][i] == player;
+
+    if (column || row)
+      return true;
   }
+
+  bool left_to_right_diagonal =
+      grid[0][0] == player && grid[1][1] == player && grid[2][2] == player;
+  bool right_to_left_diagonal =
+      grid[2][0] == player && grid[1][1] == player && grid[0][2] == player;
+
+  if (left_to_right_diagonal || right_to_left_diagonal)
+    return true;
+
+  return false;
 }
 
-int minimax(int grid[3][3], int depth, int maximizing_player) {
-  // if (depth == 0 || last_node)
-  //   return score;
+bool all_filled(int grid[3][3]) {
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (grid[i][j] == 0)
+        return false;
+    }
+  }
+  return true;
+}
 
-  // if (maximizing_player) {
-  //   int score = -INFINITY;
-  //   for (each node) {
-  //     int new_score = minimax(grid, depth - 1, false);
-  //     score = score > new_score ? score : new_score;
-  //   }
-  //   return score;
-  // } else {
-  //   int score = INFINITY;
-  //   for (each node) {
-  //     int new_score = minimax(grid, depth - 1, false);
-  //     score = score < new_score ? score : new_score;
-  //   }
-  //   return score;
-  // }
+int negamax(int grid[3][3], int maximizing_player, int move) {
+  int opponent = maximizing_player == 2 ? 1 : 2;
+  if (is_winner(grid, opponent))
+    return -1;
+  if (is_winner(grid, maximizing_player))
+    return 1;
+  if (all_filled(grid) &&
+      !(is_winner(grid, maximizing_player) || is_winner(grid, opponent)))
+    return 0;
 
-  return 0;
+  int max_score = -2, max_i, max_j;
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      if (grid[i][j] == 0) {
+        grid[i][j] = maximizing_player;
+        int temp_max = -negamax(grid, opponent, 0);
+        if (temp_max > max_score) {
+          max_score = temp_max;
+          max_i = i;
+          max_j = j;
+        }
+        grid[i][j] = 0;
+      }
+    }
+  }
+
+  if (move)
+    grid[max_i][max_j] = 2;
+
+  return max_score;
 }
 
 void reset_grid(int grid[3][3]) {
@@ -69,6 +92,7 @@ int main() {
   const int screen_height = 720;
   const int half_screen_width = screen_width / 2;
   const int half_screen_height = screen_height / 2;
+  SetTraceLogLevel(LOG_WARNING);
   InitWindow(screen_width, screen_height, "Tic-Tac-Toe");
   SetTargetFPS(60);
 
@@ -85,13 +109,11 @@ int main() {
       MeasureText("Press Enter to play again", font_size);
   const char draw_text[] = "Its a draw!";
   const int draw_text_size = MeasureText(draw_text, font_size);
-  bool is_player_one = true;
   int who_won = e_still_playing;
 
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_ENTER) && who_won != e_still_playing) {
       who_won = e_still_playing;
-      is_player_one = true;
       reset_grid(grid);
     }
 
@@ -100,23 +122,16 @@ int main() {
       int x = mouse.x / cell_size;
       int y = mouse.y / cell_size;
       if (grid[x][y] == 0 && who_won == e_still_playing) {
-        grid[x][y] = is_player_one ? 1 : 2;
-        is_player_one = !is_player_one;
+        grid[x][y] = 1;
 
-        int filled_cells = 0;
-        for (int i = 0; i < 3; i++) {
-          for (int j = 0; j < 3; j++) {
-            if (grid[i][j] != 0)
-              filled_cells++;
-          }
-        }
-        if (filled_cells == 9) {
+        if (is_winner(grid, e_player_one))
+          who_won = e_player_one;
+        else if (all_filled(grid)) {
           who_won = e_draw;
         } else {
-          // minimax();
-          // grid[px][py] = 2;
-          is_player_one = !is_player_one;
-          has_winner(grid, &who_won);
+          negamax(grid, e_player_two, 1);
+          if (is_winner(grid, e_player_two))
+            who_won = e_player_two;
         }
       }
     }
